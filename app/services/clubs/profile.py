@@ -17,13 +17,13 @@ class TransfermarktClubProfile(TransfermarktBase):
     """
 
     club_id: str = None
-    URL: str = "https://www.transfermarkt.us/-/datenfakten/verein/{club_id}"
+    URL: str = "https://www.transfermarkt.com/-/datenfakten/verein/{club_id}"
 
     def __post_init__(self) -> None:
         """Initialize the TransfermarktClubProfile class."""
         self.URL = self.URL.format(club_id=self.club_id)
         self.page = self.request_url_page()
-        self.raise_exception_if_not_found(xpath=Clubs.Profile.URL)
+        # self.raise_exception_if_not_found(xpath=Clubs.Profile.URL)
 
     def get_club_profile(self) -> dict:
         """

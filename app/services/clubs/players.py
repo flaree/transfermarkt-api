@@ -19,7 +19,7 @@ class TransfermarktClubPlayers(TransfermarktBase):
 
     club_id: str = None
     season_id: str = None
-    URL: str = "https://www.transfermarkt.us/-/kader/verein/{club_id}/saison_id/{season_id}/plus/1"
+    URL: str = "https://www.transfermarkt.com/-/kader/verein/{club_id}/saison_id/{season_id}/plus/1"
 
     def __post_init__(self) -> None:
         """Initialize the TransfermarktClubPlayers class."""
