@@ -52,7 +52,7 @@ class TransfermarktBase:
                 "http://": httpx.HTTPTransport(proxy=f"http://{proxies[int(time.time()) % len(proxies)]}"),
                 "https://": httpx.HTTPTransport(proxy=f"https://{proxies[int(time.time()) % len(proxies)]}"),
             }            
-            with httpx.Client(proxies=proxy_mounts, timeout=10) as client:
+            with httpx.Client(mounts=proxy_mounts, timeout=10) as client:
                 response = client.get(url)
             print(f"Requesting URL: {url} - Status Code: {response.status_code}")
         except TooManyRedirects:
