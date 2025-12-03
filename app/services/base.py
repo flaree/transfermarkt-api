@@ -6,7 +6,7 @@ from xml.etree import ElementTree
 from bs4 import BeautifulSoup
 from fastapi import HTTPException
 from lxml import etree
-from requests import Response, TooManyRedirects
+# from requests import Response, TooManyRedirects
 import time
 # import httpx
 from selenium import webdriver
