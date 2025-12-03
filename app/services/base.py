@@ -46,15 +46,20 @@ class TransfermarktBase:
                 server error status code.
         """
         url = self.URL if not url else url
+        headers = {
+            "User-Agent": (
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                "(KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36"
+            ),
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Encoding": "gzip, deflate, br",
+            "Accept-Language": "en-US,en;q=0.5",
+            "Connection": "keep-alive",
+            "Upgrade-Insecure-Requests": "1",
+        }
         try:
             with httpx.Client(http2=False) as client:
-                response = client.get(
-                    url=url,
-                    headers={
-                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"
-                    },
-                    timeout=15.0,
-                )
+                response = client.get(url, headers=headers, timeout=15.0)
                 print(f"Requesting URL: {url} - Status Code: {response.status_code}")
                 print(response.headers)
                 print(response.text[:500])  # Print first 500 characters of the response content
