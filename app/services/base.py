@@ -2,13 +2,13 @@ from dataclasses import dataclass, field
 from typing import Optional
 from xml.etree import ElementTree
 
-import requests
+# import requests
 from bs4 import BeautifulSoup
 from fastapi import HTTPException
 from lxml import etree
 from requests import Response, TooManyRedirects
 import time
-import httpx
+# import httpx
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
