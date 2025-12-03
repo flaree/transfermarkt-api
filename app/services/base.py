@@ -55,6 +55,7 @@ class TransfermarktBase:
                 timeout=15.0,
             )
             print(f"Requesting URL: {url} - Status Code: {response.status_code}")
+            print(response.text)
         except TooManyRedirects:
             raise HTTPException(status_code=404, detail=f"Not found for url: {url}")
         except ConnectionError:
