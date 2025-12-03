@@ -57,6 +57,7 @@ class TransfermarktBase:
                 },
             )
             print(f"Requesting URL: {url} - Status Code: {response.status_code}")
+            print(response.json())
         except TooManyRedirects:
             raise HTTPException(status_code=404, detail=f"Not found for url: {url}")
         except ConnectionError:
