@@ -61,6 +61,9 @@ class TransfermarktBase:
             raise HTTPException(status_code=500, detail=f"Connection error for url: {url}")
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Error for url: {url}. {e}")
+        if response.status_code == 202:
+            raise HTTPException(status_code=202, detail="Accepted but not processed.")
+
         if 400 <= response.status_code < 500:
             raise HTTPException(
                 status_code=response.status_code,
