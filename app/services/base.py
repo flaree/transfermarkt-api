@@ -8,6 +8,7 @@ from fastapi import HTTPException
 from lxml import etree
 from requests import Response, TooManyRedirects
 import time
+import httpx
 
 from app.utils.utils import trim
 from app.utils.xpath import Pagination
@@ -46,16 +47,8 @@ class TransfermarktBase:
         """
         url = self.URL if not url else url
         try:
-            response: Response = requests.get(
+            response = httpx.get(
                 url=url,
-                headers={
-                    "User-Agent": (
-                        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:146.0) Gecko/20100101 Firefox/146.0"
-                    ),
-"Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-                    "Accept-Encoding": "gzip, deflate, br",
-                    "Connection": "keep-alive",
-                },
             )
             print(f"Requesting URL: {url} - Status Code: {response.status_code}")
         except TooManyRedirects:
