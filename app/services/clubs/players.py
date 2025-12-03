@@ -47,6 +47,7 @@ class TransfermarktClubPlayers(TransfermarktBase):
         """
         page_nationalities = self.page.xpath(Clubs.Players.PAGE_NATIONALITIES)
         page_players_infos = self.page.xpath(Clubs.Players.PAGE_INFOS)
+        page_player_numbers = self.get_list_by_xpath(Clubs.Players.KIT_NUMBER)
         page_players_signed_from = self.page.xpath(
             Clubs.Players.Past.PAGE_SIGNED_FROM if self.past else Clubs.Players.Present.PAGE_SIGNED_FROM,
         )
@@ -62,6 +63,7 @@ class TransfermarktClubPlayers(TransfermarktBase):
         players_ages = [
             safe_regex(dob_age, REGEX_DOB, "age") for dob_age in self.get_list_by_xpath(Clubs.Players.DOB_AGE)
         ]
+        player_numbers = [num if num != "-" else None for num in page_player_numbers]
         players_nationalities = [nationality.xpath(Clubs.Players.NATIONALITIES) for nationality in page_nationalities]
         players_current_club = (
             self.get_list_by_xpath(Clubs.Players.Past.CURRENT_CLUB) if self.past else [None] * len(players_ids)
@@ -81,12 +83,12 @@ class TransfermarktClubPlayers(TransfermarktBase):
         )
         players_marketvalues = self.get_list_by_xpath(Clubs.Players.MARKET_VALUES)
         players_statuses = ["; ".join(e.xpath(Clubs.Players.STATUSES)) for e in page_players_infos if e is not None]
-
         return [
             {
                 "id": idx,
                 "name": name,
                 "position": position,
+                "shirtNumber": shirtNumber,
                 "dateOfBirth": dob,
                 "age": age,
                 "nationality": nationality,
@@ -100,10 +102,11 @@ class TransfermarktClubPlayers(TransfermarktBase):
                 "marketValue": market_value,
                 "status": status,
             }
-            for idx, name, position, dob, age, nationality, current_club, height, foot, joined_on, joined, signed_from, contract, market_value, status, in zip(  # noqa: E501
+            for idx, name, position, shirtNumber, dob, age, nationality, current_club, height, foot, joined_on, joined, signed_from, contract, market_value, status in zip(  # noqa: E501
                 players_ids,
                 players_names,
                 players_positions,
+                player_numbers,
                 players_dobs,
                 players_ages,
                 players_nationalities,

@@ -150,6 +150,7 @@ class Clubs:
         CLUB_NAME = "//header//h1//text()"
         CLUB_URL = "//li[@id='overview']//@href"
         PAGE_NATIONALITIES = "//td[img[@class='flaggenrahmen']]"
+        KIT_NUMBER="//td[div[@class='rn_nummer']]//text()"
         PAGE_INFOS = "//td[@class='posrela']"
         NAMES = "//td[@class='posrela']//a//text()"
         URLS = "//td[@class='hauptlink']//@href"

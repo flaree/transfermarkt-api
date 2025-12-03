@@ -8,6 +8,7 @@ from starlette.responses import RedirectResponse
 
 from app.api.api import api_router
 from app.settings import settings
+from fastapi.middleware.cors import CORSMiddleware
 
 limiter = Limiter(
     key_func=get_remote_address,
@@ -27,4 +28,12 @@ def docs_redirect():
 
 
 if __name__ == "__main__":
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],  # Adjust this to specify allowed origins
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

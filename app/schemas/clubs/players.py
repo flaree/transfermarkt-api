@@ -8,6 +8,7 @@ class ClubPlayer(TransfermarktBaseModel):
     id: str
     name: str
     position: str
+    shirtNumber: Optional[int] = None
     date_of_birth: Optional[date] = None
     age: Optional[int] = None
     nationality: list[str]
