@@ -47,15 +47,17 @@ class TransfermarktBase:
         """
         url = self.URL if not url else url
         try:
-            response = httpx.get(
-                url=url,
-                headers={
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"
-                },
-                timeout=15.0,
-            )
-            print(f"Requesting URL: {url} - Status Code: {response.status_code}")
-            print(response.text)
+            with httpx.Client(http2=False) as client:
+                response = client.get(
+                    url=url,
+                    headers={
+                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"
+                    },
+                    timeout=15.0,
+                )
+                print(f"Requesting URL: {url} - Status Code: {response.status_code}")
+                print(response.headers)
+                print(response.text[:500])  # Print first 500 characters of the response content
         except TooManyRedirects:
             raise HTTPException(status_code=404, detail=f"Not found for url: {url}")
         except ConnectionError:
