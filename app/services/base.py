@@ -48,7 +48,7 @@ class TransfermarktBase:
     page: ElementTree = field(default_factory=lambda: None, init=False)
     response: dict = field(default_factory=lambda: {}, init=False)
 
-    def make_request(self, url: Optional[str] = None) -> Response:
+    def make_request(self, url: Optional[str] = None):
         """
         Make an HTTP GET request to the specified URL.
 
@@ -75,35 +75,35 @@ class TransfermarktBase:
             "Connection": "keep-alive",
             "Upgrade-Insecure-Requests": "1",
         }
-        try:
-            page_content = fetch_with_selenium(url)
-            print(page_content)
+        page_content = fetch_with_selenium(url)
+        print(page_content)
             # with httpx.Client(http2=False) as client:
             #     response = client.get(url, headers=headers, timeout=15.0)
             #     print(f"Requesting URL: {url} - Status Code: {response.status_code}")
             #     print(response.headers)
             #     print(response.text)  # Print first 500 characters of the response content
-        except TooManyRedirects:
-            raise HTTPException(status_code=404, detail=f"Not found for url: {url}")
-        except ConnectionError:
-            raise HTTPException(status_code=500, detail=f"Connection error for url: {url}")
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Error for url: {url}. {e}")
-        if response.status_code == 202:
-            raise HTTPException(status_code=202, detail="Accepted but not processed.")
+        # except TooManyRedirects:
+        #     raise HTTPException(status_code=404, detail=f"Not found for url: {url}")
+        # except ConnectionError:
+        #     raise HTTPException(status_code=500, detail=f"Connection error for url: {url}")
+        # except Exception as e:
+        #     raise HTTPException(status_code=500, detail=f"Error for url: {url}. {e}")
+        # if response.status_code == 202:
+        #     raise HTTPException(status_code=202, detail="Accepted but not processed.")
 
-        if 400 <= response.status_code < 500:
-            raise HTTPException(
-                status_code=response.status_code,
-                detail=f"Client Error. {response.reason} for url: {url}",
-            )
-        elif 500 <= response.status_code < 600:
-            raise HTTPException(
-                status_code=response.status_code,
-                detail=f"Server Error. {response.reason} for url: {url}",
-            )
-        print(f"Successfully fetched URL: {url}, Status Code: {response.status_code}")
-        return response
+        # if 400 <= response.status_code < 500:
+        #     raise HTTPException(
+        #         status_code=response.status_code,
+        #         detail=f"Client Error. {response.reason} for url: {url}",
+        #     )
+        # elif 500 <= response.status_code < 600:
+        #     raise HTTPException(
+        #         status_code=response.status_code,
+        #         detail=f"Server Error. {response.reason} for url: {url}",
+        #     )
+        print(f"Successfully fetched URL: {url}, Status Code: {page_content.status_code}")
+        return page_content
+    
 
     def request_url_bsoup(self) -> BeautifulSoup:
         """
