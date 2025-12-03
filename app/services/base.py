@@ -9,10 +9,28 @@ from lxml import etree
 from requests import Response, TooManyRedirects
 import time
 import httpx
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
 
 from app.utils.utils import trim
 from app.utils.xpath import Pagination
 
+def fetch_with_selenium(url: str) -> str:
+    chrome_options = Options()
+    chrome_options.add_argument("--headless")  # Run in headless mode
+    chrome_options.add_argument("--disable-gpu")
+    chrome_options.add_argument("--no-sandbox")
+
+    service = Service("/path/to/chromedriver")  # Update with the path to your ChromeDriver
+    driver = webdriver.Chrome(service=service, options=chrome_options)
+
+    try:
+        driver.get(url)
+        page_source = driver.page_source  # Get the fully rendered page source
+        return page_source
+    finally:
+        driver.quit()
 
 @dataclass
 class TransfermarktBase:
@@ -58,11 +76,13 @@ class TransfermarktBase:
             "Upgrade-Insecure-Requests": "1",
         }
         try:
-            with httpx.Client(http2=False) as client:
-                response = client.get(url, headers=headers, timeout=15.0)
-                print(f"Requesting URL: {url} - Status Code: {response.status_code}")
-                print(response.headers)
-                print(response.text)  # Print first 500 characters of the response content
+            page_content = fetch_with_selenium(url)
+            print(page_content)
+            # with httpx.Client(http2=False) as client:
+            #     response = client.get(url, headers=headers, timeout=15.0)
+            #     print(f"Requesting URL: {url} - Status Code: {response.status_code}")
+            #     print(response.headers)
+            #     print(response.text)  # Print first 500 characters of the response content
         except TooManyRedirects:
             raise HTTPException(status_code=404, detail=f"Not found for url: {url}")
         except ConnectionError:
@@ -232,3 +252,6 @@ class TransfermarktBase:
             if url_page:
                 return int(url_page.split("=")[-1].split("/")[-1])
         return 1
+
+# Example usage
+
