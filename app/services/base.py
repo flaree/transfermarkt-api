@@ -46,24 +46,18 @@ class TransfermarktBase:
         """
         url = self.URL if not url else url
         try:
-            while True:
-                response: Response = requests.get(
-                    url=url,
-                    headers={
-                        "User-Agent": (
-                            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                            "AppleWebKit/537.36 (KHTML, like Gecko) "
-                            "Chrome/113.0.0.0 "
-                            "Safari/537.36"
-                        ),
-                    },
-                )
-                print(f"Requesting URL: {url} - Status Code: {response.status_code}")
-                if response.status_code == 202:
-                    print("Received status 202. Waiting before retrying...")
-                    time.sleep(5)  # Wait for 5 seconds before retrying
-                    continue
-                break
+            response: Response = requests.get(
+                url=url,
+                headers={
+                    "User-Agent": (
+                        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:146.0) Gecko/20100101 Firefox/146.0"
+                    ),
+"Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                    "Accept-Encoding": "gzip, deflate, br",
+                    "Connection": "keep-alive",
+                },
+            )
+            print(f"Requesting URL: {url} - Status Code: {response.status_code}")
         except TooManyRedirects:
             raise HTTPException(status_code=404, detail=f"Not found for url: {url}")
         except ConnectionError:
