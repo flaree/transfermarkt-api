@@ -7,6 +7,7 @@ from bs4 import BeautifulSoup
 from fastapi import HTTPException
 from lxml import etree
 from requests import Response, TooManyRedirects
+import time
 
 from app.utils.utils import trim
 from app.utils.xpath import Pagination
@@ -45,19 +46,24 @@ class TransfermarktBase:
         """
         url = self.URL if not url else url
         try:
-            response: Response = requests.get(
-                url=url,
-                headers={
-                    "User-Agent": (
-                        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                        "AppleWebKit/537.36 (KHTML, like Gecko) "
-                        "Chrome/113.0.0.0 "
-                        "Safari/537.36"
-                    ),
-                },
-            )
-            print(f"Requesting URL: {url} - Status Code: {response.status_code}")
-            print(response.raw.data if hasattr(response.raw, 'data') else 'No raw data available')
+            while True:
+                response: Response = requests.get(
+                    url=url,
+                    headers={
+                        "User-Agent": (
+                            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                            "AppleWebKit/537.36 (KHTML, like Gecko) "
+                            "Chrome/113.0.0.0 "
+                            "Safari/537.36"
+                        ),
+                    },
+                )
+                print(f"Requesting URL: {url} - Status Code: {response.status_code}")
+                if response.status_code == 202:
+                    print("Received status 202. Waiting before retrying...")
+                    time.sleep(5)  # Wait for 5 seconds before retrying
+                    continue
+                break
         except TooManyRedirects:
             raise HTTPException(status_code=404, detail=f"Not found for url: {url}")
         except ConnectionError:
