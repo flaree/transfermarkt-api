@@ -56,6 +56,7 @@ class TransfermarktBase:
                     ),
                 },
             )
+            print(f"Requesting URL: {url} - Status Code: {response.status_code}")
         except TooManyRedirects:
             raise HTTPException(status_code=404, detail=f"Not found for url: {url}")
         except ConnectionError:
@@ -72,6 +73,7 @@ class TransfermarktBase:
                 status_code=response.status_code,
                 detail=f"Server Error. {response.reason} for url: {url}",
             )
+        print(f"Successfully fetched URL: {url}, Status Code: {response.status_code}")
         return response
 
     def request_url_bsoup(self) -> BeautifulSoup:
