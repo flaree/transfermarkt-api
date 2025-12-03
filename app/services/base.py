@@ -62,7 +62,7 @@ class TransfermarktBase:
                 response = client.get(url, headers=headers, timeout=15.0)
                 print(f"Requesting URL: {url} - Status Code: {response.status_code}")
                 print(response.headers)
-                print(response.text[:500])  # Print first 500 characters of the response content
+                print(response.text)  # Print first 500 characters of the response content
         except TooManyRedirects:
             raise HTTPException(status_code=404, detail=f"Not found for url: {url}")
         except ConnectionError:
