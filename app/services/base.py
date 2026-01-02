@@ -47,7 +47,7 @@ class TransfermarktBase:
         """
         url = self.URL if not url else url
         try:
-            proxies_map = []
+            proxies_map = ["jamiemcg2399:EvuGqvWdpJ@31.56.98.247:50100"]
             proxies = {
                 "http": f"http://{proxies_map[int(time.time()) % len(proxies_map)]}",
                 "https": f"http://{proxies_map[int(time.time()) % len(proxies_map)]}",
