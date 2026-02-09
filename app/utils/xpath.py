@@ -136,6 +136,7 @@ class Clubs:
         LEAGUE_COUNTRY_NAME = "//div[@class='data-header__club-info']//img[contains(@class, 'flaggenrahmen')]//@title"
         LEAGUE_TIER = "//div[@class='data-header__club-info']//strong//text()//following::span[1]/a/text()[2]"
         CRESTS_HISTORICAL = "//div[@class='wappen-datenfakten-wappen']//@src"
+        MANAGER = "//td[@class='hauptlink']//a//text()"
 
     class Search:
         BASE = "//div[@class='box'][h2[contains(text(), 'Clubs')]]"

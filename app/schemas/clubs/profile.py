@@ -46,3 +46,4 @@ class ClubProfile(TransfermarktBaseModel):
     squad: ClubSquad
     league: ClubLeague
     historical_crests: Optional[list[str]] = []
+    manager: Optional[str] = None

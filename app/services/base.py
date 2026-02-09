@@ -48,18 +48,27 @@ class TransfermarktBase:
         url = self.URL if not url else url
         try:
             proxies_map = []
-            proxies = {
-                "http": f"http://{proxies_map[int(time.time()) % len(proxies_map)]}",
-                "https": f"http://{proxies_map[int(time.time()) % len(proxies_map)]}",
-            }
-            response: Response = requests.get(
-                url,
-                headers={
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"
-                },
-                proxies=proxies,
-                timeout=10,
-            )
+            if proxies_map:
+                proxies = {
+                    "http": f"http://{proxies_map[int(time.time()) % len(proxies_map)]}",
+                    "https": f"http://{proxies_map[int(time.time()) % len(proxies_map)]}",
+                }
+                response: Response = requests.get(
+                    url,
+                    headers={
+                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"
+                    },
+                    proxies=proxies,
+                    timeout=10,
+                )
+            else:
+                response: Response = requests.get(
+                    url,
+                    headers={
+                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"
+                    },
+                    timeout=10,
+                )
         except TooManyRedirects:
             raise HTTPException(status_code=404, detail=f"Not found for url: {url}")
         except ConnectionError:

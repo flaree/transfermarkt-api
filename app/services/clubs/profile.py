@@ -17,7 +17,7 @@ class TransfermarktClubProfile(TransfermarktBase):
     """
 
     club_id: str = None
-    URL: str = "https://www.transfermarkt.com/-/datenfakten/verein/{club_id}"
+    URL: str = "https://www.transfermarkt.com/-/mitarbeiter/verein/{club_id}"
 
     def __post_init__(self) -> None:
         """Initialize the TransfermarktClubProfile class."""
@@ -36,55 +36,42 @@ class TransfermarktClubProfile(TransfermarktBase):
             dict: A dictionary containing the club's profile information.
         """
         self.response["id"] = self.club_id
-        self.response["url"] = self.get_text_by_xpath(Clubs.Profile.URL)
+        self.response["url"] = self.get_text_by_xpath(Clubs.Profile.URL) or ""
         self.response["name"] = self.get_text_by_xpath(Clubs.Profile.NAME)
-        self.response["officialName"] = self.get_text_by_xpath(Clubs.Profile.NAME_OFFICIAL)
-        self.response["image"] = safe_split(self.get_text_by_xpath(Clubs.Profile.IMAGE), "?")[0]
-        self.response["legalForm"] = self.get_text_by_xpath(Clubs.Profile.LEGAL_FORM)
-        self.response["addressLine1"] = self.get_text_by_xpath(Clubs.Profile.ADDRESS_LINE_1)
-        self.response["addressLine2"] = self.get_text_by_xpath(Clubs.Profile.ADDRESS_LINE_2)
-        self.response["addressLine3"] = self.get_text_by_xpath(Clubs.Profile.ADDRESS_LINE_3)
-        self.response["tel"] = self.get_text_by_xpath(Clubs.Profile.TEL)
-        self.response["fax"] = self.get_text_by_xpath(Clubs.Profile.FAX)
-        self.response["website"] = self.get_text_by_xpath(Clubs.Profile.WEBSITE)
-        self.response["foundedOn"] = self.get_text_by_xpath(Clubs.Profile.FOUNDED_ON)
-        self.response["members"] = self.get_text_by_xpath(Clubs.Profile.MEMBERS)
-        self.response["membersDate"] = safe_regex(
-            self.get_text_by_xpath(Clubs.Profile.MEMBERS_DATE),
-            REGEX_MEMBERS_DATE,
-            "date",
-        )
-        self.response["otherSports"] = safe_split(self.get_text_by_xpath(Clubs.Profile.OTHER_SPORTS), ",")
-        self.response["colors"] = [
-            safe_regex(color, REGEX_BG_COLOR, "color")
-            for color in self.get_list_by_xpath(Clubs.Profile.COLORS)
-            if "#" in color
-        ]
-        self.response["stadiumName"] = self.get_text_by_xpath(Clubs.Profile.STADIUM_NAME)
-        self.response["stadiumSeats"] = remove_str(self.get_text_by_xpath(Clubs.Profile.STADIUM_SEATS), ["Seats", "."])
-        self.response["currentTransferRecord"] = self.get_text_by_xpath(Clubs.Profile.TRANSFER_RECORD)
-        self.response["currentMarketValue"] = self.get_text_by_xpath(
-            Clubs.Profile.MARKET_VALUE,
-            iloc_to=3,
-            join_str="",
-        )
-        self.response["confederation"] = self.get_text_by_xpath(Clubs.Profile.CONFEDERATION)
-        self.response["fifaWorldRanking"] = remove_str(self.get_text_by_xpath(Clubs.Profile.RANKING), "Pos")
+        self.response["manager"] = self.get_text_by_xpath(Clubs.Profile.MANAGER)
+        self.response["officialName"] = None
+        self.response["image"] = ""
+        self.response["legalForm"] = None
+        self.response["addressLine1"] = None
+        self.response["addressLine2"] = None
+        self.response["addressLine3"] = None
+        self.response["tel"] = None
+        self.response["fax"] = None
+        self.response["website"] = None
+        self.response["foundedOn"] = None
+        self.response["members"] = None
+        self.response["membersDate"] = None
+        self.response["otherSports"] = None
+        self.response["colors"] = []
+        self.response["stadiumName"] = self.get_text_by_xpath(Clubs.Profile.STADIUM_NAME) or ""
+        self.response["stadiumSeats"] = 1
+        self.response["currentTransferRecord"] = "1"
+        self.response["currentMarketValue"] = None
+        self.response["confederation"] = None
+        self.response["fifaWorldRanking"] = None
         self.response["squad"] = {
-            "size": self.get_text_by_xpath(Clubs.Profile.SQUAD_SIZE),
-            "averageAge": self.get_text_by_xpath(Clubs.Profile.SQUAD_AVG_AGE),
-            "foreigners": self.get_text_by_xpath(Clubs.Profile.SQUAD_FOREIGNERS),
-            "nationalTeamPlayers": self.get_text_by_xpath(Clubs.Profile.SQUAD_NATIONAL_PLAYERS),
+            "size": 0,
+            "averageAge": 0.0,
+            "foreigners": 0,
+            "nationalTeamPlayers": 0,
         }
         self.response["league"] = {
-            "id": extract_from_url(self.get_text_by_xpath(Clubs.Profile.LEAGUE_ID)),
-            "name": self.get_text_by_xpath(Clubs.Profile.LEAGUE_NAME),
-            "countryId": safe_regex(self.get_text_by_xpath(Clubs.Profile.LEAGUE_COUNTRY_ID), REGEX_COUNTRY_ID, "id"),
-            "countryName": self.get_text_by_xpath(Clubs.Profile.LEAGUE_COUNTRY_NAME),
-            "tier": self.get_text_by_xpath(Clubs.Profile.LEAGUE_TIER),
+            "id": None,
+            "name": None,
+            "countryId": None,
+            "countryName": None,
+            "tier": None,
         }
-        self.response["historicalCrests"] = [
-            safe_split(crest, "?")[0] for crest in self.get_list_by_xpath(Clubs.Profile.CRESTS_HISTORICAL)
-        ]
+        self.response["historicalCrests"] = []
 
         return self.response
