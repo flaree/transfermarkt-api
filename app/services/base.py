@@ -1,3 +1,5 @@
+import logging
+import threading
 from dataclasses import dataclass, field
 from typing import Optional
 from xml.etree import ElementTree
@@ -7,11 +9,113 @@ from bs4 import BeautifulSoup
 from fastapi import HTTPException
 from lxml import etree
 from requests import Response, TooManyRedirects
-import httpx
 
 from app.settings import settings
+from app.utils.breaker import bot_breaker
+from app.utils.exceptions import BotChallengeError
 from app.utils.utils import trim
 from app.utils.xpath import Pagination
+
+logger = logging.getLogger(__name__)
+
+# Headers for a page navigation. Transfermarkt's anti-bot layer fingerprints the whole header set,
+# not just the User-Agent, so these mirror what a current Chrome actually sends. Accept-Encoding is
+# deliberately omitted: requests advertises only the codecs it can actually decode.
+BROWSER_HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/131.0.0.0 Safari/537.36"
+    ),
+    "Accept": (
+        "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,"
+        "*/*;q=0.8,application/signed-exchange;v=b3;q=0.7"
+    ),
+    "Accept-Language": "en-US,en;q=0.9",
+    "Sec-Ch-Ua": '"Google Chrome";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
+    "Sec-Ch-Ua-Mobile": "?0",
+    "Sec-Ch-Ua-Platform": '"Windows"',
+    "Sec-Fetch-Dest": "document",
+    "Sec-Fetch-Mode": "navigate",
+    "Sec-Fetch-Site": "none",
+    "Sec-Fetch-User": "?1",
+    "Upgrade-Insecure-Requests": "1",
+}
+
+# The /ceapi/ endpoints are fetched by the page's own JavaScript. Announcing them as a top-level
+# document navigation is an obvious inconsistency, so they get XHR-shaped headers instead.
+XHR_HEADERS = {
+    "Accept": "application/json, text/plain, */*",
+    "Sec-Fetch-Dest": "empty",
+    "Sec-Fetch-Mode": "cors",
+    "Sec-Fetch-Site": "same-origin",
+    "X-Requested-With": "XMLHttpRequest",
+}
+
+# Substrings identifying a DataDome interstitial rather than real content.
+CHALLENGE_MARKERS = ("datadome", "captcha-delivery.com", "geo.captcha-delivery")
+
+_session: Optional[requests.Session] = None
+_session_lock = threading.Lock()
+
+
+def get_session() -> requests.Session:
+    """
+    Return the process-wide requests Session, creating it on first use.
+
+    A single Session is what makes the anti-bot clearance cookie persist: `requests.get` builds a
+    throwaway Session per call and discards its cookie jar, so every request re-enters the challenge
+    funnel as a first-time visitor.
+
+    Returns:
+        requests.Session: The shared session, with browser-shaped default headers applied.
+    """
+    global _session
+    if _session is None:
+        with _session_lock:
+            if _session is None:
+                session = requests.Session()
+                session.headers.update(BROWSER_HEADERS)
+                _session = session
+    return _session
+
+
+def reset_session() -> None:
+    """Drop the shared session and its cookie jar (used by tests, and after a hard block)."""
+    global _session
+    with _session_lock:
+        if _session is not None:
+            _session.close()
+        _session = None
+
+
+def is_bot_challenge(response: Response) -> bool:
+    """
+    Determine whether a response is an anti-bot interstitial rather than the requested content.
+
+    Args:
+        response (Response): The HTTP response to inspect.
+
+    Returns:
+        bool: True if the response is a challenge page.
+    """
+    # Transfermarkt never legitimately answers these GETs with 202.
+    if response.status_code == 202:
+        return True
+
+    # Only inspect the body when the response is already suspect: a challenge arrives either with a
+    # blocking status or as an interstitial far smaller than a real Transfermarkt page. This keeps
+    # the common path from decoding hundreds of KB of HTML just to scan it.
+    if response.status_code not in (403, 429) and len(response.content) >= 20_000:
+        return False
+
+    haystack = " ".join(
+        [
+            response.headers.get("Set-Cookie", ""),
+            response.headers.get("Server", ""),
+            response.text[:4000],
+        ],
+    ).lower()
+    return any(marker in haystack for marker in CHALLENGE_MARKERS)
 
 
 @dataclass
@@ -42,28 +146,44 @@ class TransfermarktBase:
             Response: An HTTP Response object containing the server's response to the request.
 
         Raises:
+            BotChallengeError: If the anti-bot layer served a challenge instead of the content, or
+                if the circuit breaker is open after repeated challenges.
             HTTPException: If there are too many redirects, or if the server returns a client or
                 server error status code.
         """
         url = self.URL if not url else url
+
+        # Fail fast while the breaker is open so the caller can fall back to stale data instead of
+        # spending a round trip on a request that is going to be challenged anyway.
+        if not bot_breaker.allow():
+            logger.warning("Circuit open, skipping request to %s", url)
+            raise BotChallengeError(url=url, status_code=202)
+
+        headers = dict(XHR_HEADERS) if "/ceapi/" in url else {}
         try:
             proxy_url = settings.PROXY_URL
             proxies = {"http": proxy_url, "https": proxy_url} if proxy_url else None
-            response: Response = requests.get(
+            response: Response = get_session().get(
                 url,
-                headers={
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"
-                },
+                headers=headers,
                 proxies=proxies,
                 timeout=10,
             )
         except TooManyRedirects:
             raise HTTPException(status_code=404, detail=f"Not found for url: {url}")
-        except ConnectionError:
+        except requests.exceptions.ConnectionError:
             raise HTTPException(status_code=500, detail=f"Connection error for url: {url}")
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Error for url: {url}. {e}")
-        
+
+        if is_bot_challenge(response):
+            bot_breaker.record_failure()
+            logger.warning("Bot challenge (%s) for url: %s", response.status_code, url)
+            raise BotChallengeError(url=url, status_code=response.status_code)
+
+        # Getting a real answer means the anti-bot layer let us through, whatever the status is.
+        bot_breaker.record_success()
+
         if 400 <= response.status_code < 500:
             raise HTTPException(
                 status_code=response.status_code,
@@ -74,7 +194,7 @@ class TransfermarktBase:
                 status_code=response.status_code,
                 detail=f"Server Error. {response.reason} for url: {url}",
             )
-        print(f"Successfully fetched URL: {url}, Status Code: {response.status_code}")
+        logger.info("Fetched %s (%s)", url, response.status_code)
         return response
 
     def request_url_bsoup(self) -> BeautifulSoup:

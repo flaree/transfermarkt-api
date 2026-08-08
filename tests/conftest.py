@@ -1,6 +1,19 @@
 import pytest
 from schema import Regex
 
+from app.utils.breaker import bot_breaker
+from app.utils.cache import cache
+
+
+@pytest.fixture(autouse=True)
+def isolate_cache():
+    """Stop cached responses and breaker state from leaking between tests."""
+    cache.clear()
+    bot_breaker.reset()
+    yield
+    cache.clear()
+    bot_breaker.reset()
+
 
 @pytest.fixture
 def len_greater_than_0():
