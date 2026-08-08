@@ -7,9 +7,9 @@ from bs4 import BeautifulSoup
 from fastapi import HTTPException
 from lxml import etree
 from requests import Response, TooManyRedirects
-import time
 import httpx
 
+from app.settings import settings
 from app.utils.utils import trim
 from app.utils.xpath import Pagination
 
@@ -47,28 +47,16 @@ class TransfermarktBase:
         """
         url = self.URL if not url else url
         try:
-            proxies_map = []
-            if proxies_map:
-                proxies = {
-                    "http": f"http://{proxies_map[int(time.time()) % len(proxies_map)]}",
-                    "https": f"http://{proxies_map[int(time.time()) % len(proxies_map)]}",
-                }
-                response: Response = requests.get(
-                    url,
-                    headers={
-                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"
-                    },
-                    proxies=proxies,
-                    timeout=10,
-                )
-            else:
-                response: Response = requests.get(
-                    url,
-                    headers={
-                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"
-                    },
-                    timeout=10,
-                )
+            proxy_url = settings.PROXY_URL
+            proxies = {"http": proxy_url, "https": proxy_url} if proxy_url else None
+            response: Response = requests.get(
+                url,
+                headers={
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"
+                },
+                proxies=proxies,
+                timeout=10,
+            )
         except TooManyRedirects:
             raise HTTPException(status_code=404, detail=f"Not found for url: {url}")
         except ConnectionError:
@@ -129,7 +117,13 @@ class TransfermarktBase:
                 server error status code.
         """
         bsoup: BeautifulSoup = self.request_url_bsoup()
-        return self.convert_bsoup_to_page(bsoup=bsoup)
+        page = self.convert_bsoup_to_page(bsoup=bsoup)
+        if page is None:
+            raise HTTPException(
+                status_code=502,
+                detail=f"Received an empty or unparseable response from url: {self.URL}",
+            )
+        return page
 
     def raise_exception_if_not_found(self, xpath: str):
         """
